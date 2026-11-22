@@ -174,6 +174,8 @@ window.GameVoice.start = function (dotNetRef) {
     // Clear any prior buffered text so it cannot leak into the next transmission.
     window.GameVoice._bufferText = '';
     window.GameVoice._latestInterim = '';
+    // Dedupe applies within one push-to-talk session only, so repeating "yes" next time is sent.
+    window.GameVoice._lastSentText = '';
 
     window.GameVoice._dotNetRef = dotNetRef;
     window.GameVoice._shouldListen = true;
