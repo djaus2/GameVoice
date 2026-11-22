@@ -261,8 +261,18 @@
         {
         }
 
+        if (_pttHeld)
+        {
+            try
+            {
+                await JS.InvokeAsync<bool>("GameVoice.stop");
+            }
+            catch
+            {
+            }
+        }
+
         _pttHeld = false;
         _dotNetRef?.Dispose();
-        await Task.CompletedTask;
     }
 }
