@@ -1,7 +1,7 @@
 # GameVoice
 
 Reusable Blazor Server voice library (speech recognition, TTS, voice floor) for Draughts, Reversi and future games
-such as Chess and WalkieTalkie. It is a Razor class library published as a NuGet package on GitHub Packages.
+such as Chess and WalkieTalkie. It is a Razor class library published as the [`GameVoice`](https://www.nuget.org/packages/GameVoice) package on nuget.org.
 
 ## What's in the package
 
@@ -20,7 +20,7 @@ Text chat, game rules and persistence stay in each app.
 
 ## Using it in an app
 
-1. Add the GitHub Packages source (see [Authentication](#authentication)) and reference the package:
+1. Reference the package (from nuget.org, so no extra package source or token is needed):
 
    ```xml
    <PackageReference Include="GameVoice" Version="1.0.0" />
@@ -81,20 +81,6 @@ Text chat, game rules and persistence stay in each app.
 
 Rooms are not tied to two players: a WalkieTalkie group or a lobby can be a `VoiceRoom` too.
 
-## Authentication
-
-GitHub Packages requires a token even to restore. Create a classic PAT with `read:packages` and add it to your
-user-level NuGet config once per machine (never commit it):
-
-```bash
-dotnet nuget add source https://nuget.pkg.github.com/djaus2/index.json --name github-djaus2 \
-  --username <github-user> --password <PAT> --store-password-in-clear-text
-```
-
-If the app's `nuget.config` already defines `github-djaus2`, use `dotnet nuget update source github-djaus2 ...`
-with the same options instead. CI can use `secrets.GITHUB_TOKEN` when the package grants that repo read access
-(package settings → Manage Actions access).
-
 ## Building and releasing
 
 ```bash
@@ -103,7 +89,8 @@ dotnet pack src/GameVoice -c Release -o artifacts
 ```
 
 To publish, bump nothing and push a tag: `git tag v1.0.1 && git push origin v1.0.1`. The
-[publish workflow](.github/workflows/publish.yml) packs that version and pushes it to GitHub Packages.
+[publish workflow](.github/workflows/publish.yml) packs that version and pushes it to nuget.org using the `NUGET_API_KEY` repository secret
+(a nuget.org API key scoped to push `GameVoice`). New versions take a few minutes to appear after nuget.org validates them.
 Then bump `<PackageReference Include="GameVoice" Version="..." />` in each app.
 
 To try library changes in an app before publishing, pack to a local folder and restore from it:
