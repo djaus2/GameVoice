@@ -156,12 +156,25 @@
 
         _dotNetRef ??= DotNetObjectReference.Create(this);
 
+        var started = false;
         try
         {
-            await JS.InvokeAsync<bool>("GameVoice.start", _dotNetRef);
+            started = await JS.InvokeAsync<bool>("GameVoice.start", _dotNetRef);
         }
         catch
         {
+        }
+
+        if (!started)
+        {
+            _pttHeld = false;
+            if (!string.IsNullOrWhiteSpace(RoomId) && UserId > 0)
+            {
+                Voice.ReleaseFloor(RoomId, UserId);
+            }
+            _error = "Mic error: speech recognition could not start";
+            await StatusChanged.InvokeAsync();
+            return;
         }
 
         _floorRenewTimer?.Dispose();
