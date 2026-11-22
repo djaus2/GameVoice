@@ -118,6 +118,8 @@ public class VoiceRoomServiceTests
         var host = new Host();
         host.Rooms["g1"] = new VoiceRoom();
         var svc = new VoiceRoomService(host);
+        var events = new List<(string, VoiceRoomChange)>();
+        svc.RoomChanged += (id, c) => events.Add((id, c));
 
         Assert.True(svc.TryAcquireFloor("g1", 1, "Ann"));
         Assert.False(svc.TryAcquireFloor("g1", 2, "Bob"));
@@ -131,6 +133,7 @@ public class VoiceRoomServiceTests
             new[] { VoiceRoomChange.Floor, VoiceRoomChange.Floor, VoiceRoomChange.Preferences, VoiceRoomChange.Mute },
             host.Changes.Select(c => c.Change));
         Assert.Equal("en", svc.GetPreference("g1", 1).Language);
+        Assert.Equal(host.Changes, events);
     }
 }
 

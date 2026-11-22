@@ -10,6 +10,15 @@ public sealed class VoiceRoomService
         _host = host;
     }
 
+    /// <summary>Raised after the host is notified of a change (room id, change kind). Used by <c>VoiceControls</c> to re-render.</summary>
+    public event Action<string, VoiceRoomChange>? RoomChanged;
+
+    private void Notify(string roomId, VoiceRoomChange change)
+    {
+        _host.OnVoiceRoomChanged(roomId, change);
+        RoomChanged?.Invoke(roomId, change);
+    }
+
     public VoiceRoom? GetRoom(string? roomId)
         => string.IsNullOrWhiteSpace(roomId) ? null : _host.FindVoiceRoom(roomId);
 
@@ -19,7 +28,7 @@ public sealed class VoiceRoomService
         var room = GetRoom(roomId);
         if (room is null) return false;
         if (!room.TryAcquireFloor(userId, userName, holdSeconds)) return false;
-        _host.OnVoiceRoomChanged(roomId!, VoiceRoomChange.Floor);
+        Notify(roomId!, VoiceRoomChange.Floor);
         return true;
     }
 
@@ -29,7 +38,7 @@ public sealed class VoiceRoomService
         var room = GetRoom(roomId);
         if (room is null) return false;
         if (!room.ReleaseFloor(userId)) return false;
-        _host.OnVoiceRoomChanged(roomId!, VoiceRoomChange.Floor);
+        Notify(roomId!, VoiceRoomChange.Floor);
         return true;
     }
 
@@ -41,7 +50,7 @@ public sealed class VoiceRoomService
         if (room is null) return (false, "Game not found");
 
         var result = room.ToggleMute(userId, userName);
-        if (result.Ok) _host.OnVoiceRoomChanged(roomId, VoiceRoomChange.Mute);
+        if (result.Ok) Notify(roomId, VoiceRoomChange.Mute);
         return result;
     }
 
@@ -54,7 +63,7 @@ public sealed class VoiceRoomService
         var room = GetRoom(roomId);
         if (room is null) return false;
         room.SetPreference(userId, preference);
-        _host.OnVoiceRoomChanged(roomId!, VoiceRoomChange.Preferences);
+        Notify(roomId!, VoiceRoomChange.Preferences);
         return true;
     }
 

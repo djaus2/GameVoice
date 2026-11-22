@@ -78,6 +78,21 @@
 
     private VoiceRoom? Room => Voice.GetRoom(RoomId);
 
+    protected override void OnInitialized()
+    {
+        Voice.RoomChanged += OnRoomChanged;
+    }
+
+    private void OnRoomChanged(string roomId, VoiceRoomChange change)
+    {
+        if (change == VoiceRoomChange.Preferences) return;
+        if (!string.Equals(roomId, RoomId, StringComparison.Ordinal)) return;
+        Refresh();
+    }
+
+    /// <summary>Re-renders the controls; safe to call from any thread (e.g. a host timer, so floor expiry shows).</summary>
+    public void Refresh() => _ = InvokeAsync(StateHasChanged);
+
     public bool IsTalking => _pttHeld;
 
     public bool IsMuted => Room?.IsMuted ?? false;
@@ -242,6 +257,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        Voice.RoomChanged -= OnRoomChanged;
+
         try
         {
             _floorRenewTimer?.Dispose();
