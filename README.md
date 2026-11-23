@@ -1,6 +1,6 @@
 # GameVoice
 
-Reusable Blazor Server voice library (speech recognition, TTS, voice floor) for Draughts, Reversi and future games
+Reusable Blazor Server voice and text chat library (speech recognition, TTS, voice floor, in-game and lobby text chat) for Draughts, Reversi and future games
 such as Chess and WalkieTalkie. It is a Razor class library published as the [`GameVoice`](https://www.nuget.org/packages/GameVoice) package on nuget.org.
 
 ## What's in the package
@@ -30,7 +30,7 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
    <PackageReference Include="GameVoice" Version="1.1.0" />
    ```
 
-2. Load the script before the app's own scripts in `App.razor`:
+2. Load the scripts before the app's own scripts in `App.razor`:
 
    ```html
    <script src="_content/GameVoice/gameVoice.js"></script>
