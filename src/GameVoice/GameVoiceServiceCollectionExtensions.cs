@@ -13,4 +13,11 @@ public static class GameVoiceServiceCollectionExtensions
         services.AddSingleton<VoiceRoomService>();
         return services;
     }
+
+    /// <summary>Registers the shared <see cref="LobbyChatService"/>. In-game chat needs no registration: give each game a <see cref="ChatLog"/>.</summary>
+    public static IServiceCollection AddGameChat(this IServiceCollection services)
+    {
+        services.AddSingleton<LobbyChatService>();
+        return services;
+    }
 }

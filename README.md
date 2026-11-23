@@ -15,21 +15,26 @@ such as Chess and WalkieTalkie. It is a Razor class library published as the [`G
 | `VoicePreference` | A user's TTS voice key/language/region, with normalisation. |
 | `IVoiceCatalog`, `VoiceCatalogEntry`, `VoiceCatalog` | Interface for the admin-allowed voice catalogue (storage stays in the app, e.g. a `UsableMsVoice` table) and token/key helpers. |
 | `IVoicePreferenceStore` | Optional interface for persisting per-user voice preferences. |
+| `wwwroot/gameChat.js` (`window.GameChat`) | Text chat helpers: `scrollToBottom(el)` and `wireEnterToSend(el, dotNetRef, methodName = 'OnChatEnterFromJs')`. |
+| `ChatMessage` | One chat line (time, sender id/name, text, optional lobby group). `VoicePrefix` (`[VOICE] `) marks speech transcripts; `IsVoice` tests for it. |
+| `ChatLog` | Thread-safe in-game chat for one room: `TryAdd` (normalises text), `AddSystem`, `Clear`, indexer/`Count`, and `Format(startIndex, hideVoice)` for a chat textarea. |
+| `LobbyChatService` | Shared lobby chat: group-only messages, admin broadcasts to every group, system messages, per-user delete/clear, last 200 messages, `ChatUpdated` event. Register with `AddGameChat()`. |
 
-Text chat, game rules and persistence stay in each app.
+Game rules, persistence and the chat/lobby page layout stay in each app.
 
 ## Using it in an app
 
 1. Reference the package (from nuget.org, so no extra package source or token is needed):
 
    ```xml
-   <PackageReference Include="GameVoice" Version="1.0.0" />
+   <PackageReference Include="GameVoice" Version="1.1.0" />
    ```
 
 2. Load the script before the app's own scripts in `App.razor`:
 
    ```html
    <script src="_content/GameVoice/gameVoice.js"></script>
+   <script src="_content/GameVoice/gameChat.js"></script>
    ```
 
 3. Give each game (room) a `VoiceRoom` and implement `IVoiceRoomHost` on the service that owns the games:
@@ -79,7 +84,15 @@ Text chat, game rules and persistence stay in each app.
    To read messages aloud call `GameVoice.speakAndDescribe(text, voiceKey, language, region)` or
    `GameVoice.speakDefaultAndDescribe(text)` with the sender's `room.GetPreference(senderId)`.
 
-Rooms are not tied to two players: a WalkieTalkie group or a lobby can be a `VoiceRoom` too.
+Text chat:
+
+- In-game: give each game a `ChatLog` (`public ChatLog ChatMessages { get; } = new();`), add messages with
+  `TryAdd(senderId, senderName, text)` or `AddSystem(text)`, and show `ChatMessages.Format(startIndex, hideVoice)`.
+- Lobby: call `builder.Services.AddGameChat();` and inject `LobbyChatService`; subscribe to `ChatUpdated` to re-render.
+- Enter-to-send: `await JS.InvokeVoidAsync("GameChat.wireEnterToSend", textareaRef, dotNetRef);` calls the
+  component's `[JSInvokable] OnChatEnterFromJs()`; `GameChat.scrollToBottom(el)` keeps the latest line visible.
+
+Rooms are not tied to two players: a WalkieTalkie group or a lobby can be a `VoiceRoom` (and a `ChatLog`) too.
 
 ## Building and releasing
 
