@@ -1,0 +1,295 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject VoiceRoomService Voice
+
+<div style="@ContainerStyle">
+    <button class="@ButtonClass" disabled="@(!CanPressToTalk)"
+            @onpointerdown="OnTalkPointerDown"
+            @onpointerup="OnTalkPointerUp"
+            @onpointercancel="OnTalkPointerUp"
+            @onpointerleave="OnTalkPointerUp"
+            @onpointerdown:preventDefault="true"
+            @onpointerup:preventDefault="true">
+        @if (IsMuted)
+        {
+            <span style="font-size:18px;">🔇</span>
+        }
+        else
+        {
+            <span style="font-size:18px;">🔊</span>
+        }
+        <span>@TalkButtonText</span>
+    </button>
+</div>
+<div style="@ContainerStyle">
+    <button class="@ButtonClass" @onclick="ToggleMute"
+            disabled="@(IsMuted && !CanUnmute)"
+            title="@MuteButtonTitle">
+        @if (IsMuted)
+        {
+            <span style="font-size:18px;">🔇</span>
+            <span>Unmute</span>
+        }
+        else
+        {
+            <span style="font-size:18px;">🔊</span>
+            <span>Mute</span>
+        }
+    </button>
+</div>
+
+@code {
+    /// <summary>Id of the <see cref="VoiceRoom"/> (e.g. the game id).</summary>
+    [Parameter] public string? RoomId { get; set; }
+
+    [Parameter] public int UserId { get; set; }
+
+    [Parameter] public string? UserName { get; set; }
+
+    /// <summary>Result of <c>GameVoice.isSupported</c>, detected by the host page.</summary>
+    [Parameter] public bool Supported { get; set; }
+
+    [Parameter] public bool SupportChecked { get; set; }
+
+    [Parameter] public bool TalkEnabled { get; set; }
+
+    /// <summary>Who the mute applies to, used in the Mute tooltip.</summary>
+    [Parameter] public string MuteAudience { get; set; } = "both players";
+
+    [Parameter] public string ButtonClass { get; set; } = "game-voice-button";
+
+    [Parameter] public string ContainerStyle { get; set; } = "display:flex;align-items:center;gap:8px;";
+
+    /// <summary>Raised with the trimmed final transcript while the room is not muted.</summary>
+    [Parameter] public EventCallback<string> TranscriptReceived { get; set; }
+
+    /// <summary>Raised with a user-facing message, e.g. why unmute was refused.</summary>
+    [Parameter] public EventCallback<string> MessageRaised { get; set; }
+
+    /// <summary>Raised when <see cref="Status"/> may have changed without a parent render.</summary>
+    [Parameter] public EventCallback StatusChanged { get; set; }
+
+    private const int FloorRenewSeconds = 2;
+
+    private bool _pttHeld;
+    private string? _error;
+    private DotNetObjectReference<VoiceControls>? _dotNetRef;
+    private Timer? _floorRenewTimer;
+
+    private VoiceRoom? Room => Voice.GetRoom(RoomId);
+
+    protected override void OnInitialized()
+    {
+        Voice.RoomChanged += OnRoomChanged;
+    }
+
+    private void OnRoomChanged(string roomId, VoiceRoomChange change)
+    {
+        if (change == VoiceRoomChange.Preferences) return;
+        if (!string.Equals(roomId, RoomId, StringComparison.Ordinal)) return;
+        Refresh();
+    }
+
+    /// <summary>Re-renders the controls; safe to call from any thread (e.g. a host timer, so floor expiry shows).</summary>
+    public void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    public bool IsTalking => _pttHeld;
+
+    public bool IsMuted => Room?.IsMuted ?? false;
+
+    private bool CanUnmute => Room?.CanUnmute(UserId) ?? false;
+
+    private bool IsFloorHeldByOther => Room?.IsFloorHeldByOther(UserId) ?? false;
+
+    private bool CanPressToTalk => Supported && TalkEnabled && !_pttHeld && !IsFloorHeldByOther && !IsMuted;
+
+    /// <summary>Short status for the host page, e.g. "Hold to talk" or "Sam talking…".</summary>
+    public string Status
+    {
+        get
+        {
+            if (!SupportChecked) return "";
+            if (!Supported) return "Talk not supported";
+            if (!TalkEnabled) return "Talk is off";
+            if (_pttHeld) return "Talking…";
+            if (IsFloorHeldByOther)
+            {
+                var name = Room?.FloorUserName;
+                return string.IsNullOrWhiteSpace(name) ? "Other talking…" : $"{name} talking…";
+            }
+            if (!string.IsNullOrWhiteSpace(_error)) return _error;
+            return "Hold to talk";
+        }
+    }
+
+    private string TalkButtonText
+    {
+        get
+        {
+            if (!Supported) return "Talk not supported";
+            if (!TalkEnabled) return "Talk";
+            if (IsMuted) return "Muted";
+            if (_pttHeld) return "Talking…";
+            if (IsFloorHeldByOther) return "Other talking…";
+            return "Talk";
+        }
+    }
+
+    private string MuteButtonTitle
+    {
+        get
+        {
+            if (!IsMuted) return $"Mute voice for {MuteAudience}";
+            if (CanUnmute) return "Unmute voice";
+            return $"Muted by {Room?.MutedByUserName ?? "other player"} - only they can unmute";
+        }
+    }
+
+    private async Task ToggleMute()
+    {
+        if (string.IsNullOrWhiteSpace(RoomId)) return;
+        if (UserId <= 0) return;
+
+        var (ok, msg) = Voice.ToggleMute(RoomId, UserId, UserName);
+        if (!ok && !string.IsNullOrWhiteSpace(msg))
+        {
+            await MessageRaised.InvokeAsync(msg);
+        }
+    }
+
+    private async Task OnTalkPointerDown()
+    {
+        if (!CanPressToTalk) return;
+
+        _pttHeld = true;
+        _error = null;
+
+        if (!string.IsNullOrWhiteSpace(RoomId) && UserId > 0)
+        {
+            Voice.TryAcquireFloor(RoomId, UserId, UserName);
+        }
+
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+
+        var started = false;
+        try
+        {
+            started = await JS.InvokeAsync<bool>("GameVoice.start", _dotNetRef);
+        }
+        catch
+        {
+        }
+
+        if (!started)
+        {
+            _pttHeld = false;
+            if (!string.IsNullOrWhiteSpace(RoomId) && UserId > 0)
+            {
+                Voice.ReleaseFloor(RoomId, UserId);
+            }
+            _error = "Mic error: speech recognition could not start";
+            await StatusChanged.InvokeAsync();
+            return;
+        }
+
+        _floorRenewTimer?.Dispose();
+        _floorRenewTimer = new Timer(_ =>
+        {
+            if (!_pttHeld) return;
+            if (string.IsNullOrWhiteSpace(RoomId)) return;
+            if (UserId <= 0) return;
+            Voice.TryAcquireFloor(RoomId, UserId, UserName);
+        }, null, TimeSpan.FromSeconds(FloorRenewSeconds), TimeSpan.FromSeconds(FloorRenewSeconds));
+
+        await StatusChanged.InvokeAsync();
+    }
+
+    private async Task OnTalkPointerUp()
+    {
+        if (!_pttHeld) return;
+        _pttHeld = false;
+
+        _floorRenewTimer?.Dispose();
+        _floorRenewTimer = null;
+
+        if (!string.IsNullOrWhiteSpace(RoomId) && UserId > 0)
+        {
+            Voice.ReleaseFloor(RoomId, UserId);
+        }
+
+        try
+        {
+            await JS.InvokeAsync<bool>("GameVoice.stop");
+        }
+        catch
+        {
+        }
+
+        await StatusChanged.InvokeAsync();
+    }
+
+    [JSInvokable]
+    public async Task OnVoiceTranscript(string text)
+    {
+        // _pttHeld may already be false: the JS flush is delayed after the button is released.
+        if (string.IsNullOrWhiteSpace(RoomId)) return;
+        if (UserId <= 0) return;
+        if (string.IsNullOrWhiteSpace(text)) return;
+        if (IsMuted) return;
+
+        await InvokeAsync(() => TranscriptReceived.InvokeAsync(text.Trim()));
+    }
+
+    [JSInvokable]
+    public async Task OnVoiceError(string error)
+    {
+        var text = (error ?? string.Empty).Trim();
+        _error = string.IsNullOrWhiteSpace(text) ? "Mic error" : $"Mic error: {text}";
+        await InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await StatusChanged.InvokeAsync();
+        });
+    }
+
+    [JSInvokable]
+    public Task OnVoiceEnded() => Task.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        Voice.RoomChanged -= OnRoomChanged;
+
+        try
+        {
+            _floorRenewTimer?.Dispose();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            if (_pttHeld && !string.IsNullOrWhiteSpace(RoomId) && UserId > 0)
+            {
+                Voice.ReleaseFloor(RoomId, UserId);
+            }
+        }
+        catch
+        {
+        }
+
+        if (_pttHeld)
+        {
+            try
+            {
+                await JS.InvokeAsync<bool>("GameVoice.stop");
+            }
+            catch
+            {
+            }
+        }
+
+        _pttHeld = false;
+        _dotNetRef?.Dispose();
+    }
+}

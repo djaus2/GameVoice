@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/GameVoice/GameVoice.csproj" />
+  <Project Path="tests/GameVoice.Tests/GameVoice.Tests.csproj" />
+</Solution>
