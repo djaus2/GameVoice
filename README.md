@@ -88,7 +88,11 @@ dotnet test GameVoice.slnx
 dotnet pack src/GameVoice -c Release -o artifacts
 ```
 
-To publish, bump nothing and push a tag: `git tag v1.0.1 && git push origin v1.0.1`. The
+> [!IMPORTANT]
+> The tag must start with `v` or `V` followed by the version, e.g. `v1.0.1`. Any other tag (such as `1.0.1` or `release-1.0.1`) does not publish anything.
+> Git tags are case-sensitive but Windows is not, so don't create both `v1.0.1` and `V1.0.1`.
+
+To publish, bump nothing and push a tag: `git tag v1.0.1 && git push origin v1.0.1`, or create a GitHub release with that tag. The
 [publish workflow](.github/workflows/publish.yml) packs that version and pushes it to nuget.org using nuget.org
 [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing) (policy: owner `djaus2`, repo `GameVoice`, workflow `publish.yml`; no API key or secret). New versions take a few minutes to appear after nuget.org validates them.
 Then bump `<PackageReference Include="GameVoice" Version="..." />` in each app.
