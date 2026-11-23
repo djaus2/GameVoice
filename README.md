@@ -89,8 +89,8 @@ dotnet pack src/GameVoice -c Release -o artifacts
 ```
 
 To publish, bump nothing and push a tag: `git tag v1.0.1 && git push origin v1.0.1`. The
-[publish workflow](.github/workflows/publish.yml) packs that version and pushes it to nuget.org using the `NUGET_API_KEY` repository secret
-(a nuget.org API key scoped to push `GameVoice`). New versions take a few minutes to appear after nuget.org validates them.
+[publish workflow](.github/workflows/publish.yml) packs that version and pushes it to nuget.org using nuget.org
+[Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing) (policy: owner `djaus2`, repo `GameVoice`, workflow `publish.yml`; no API key or secret). New versions take a few minutes to appear after nuget.org validates them.
 Then bump `<PackageReference Include="GameVoice" Version="..." />` in each app.
 
 To try library changes in an app before publishing, pack to a local folder and restore from it:

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
@@ -19,5 +20,11 @@ jobs:
       - run: dotnet test GameVoice.slnx -c Release
       - name: Pack
         run: dotnet pack src/GameVoice -c Release -o artifacts -p:Version=${GITHUB_REF_NAME#v}
+      # Trusted Publishing: exchanges the workflow's OIDC token for a short-lived nuget.org API key.
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: davidjonessportronics
       - name: Push to nuget.org
-        run: dotnet nuget push "artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
+        run: dotnet nuget push "artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --skip-duplicate
