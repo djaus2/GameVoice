@@ -5,15 +5,8 @@ such as Chess and WalkieTalkie. It is a Razor class library published as the [`G
 
 ## Disclaimer
 
-GameVoice is **not an AI bot**. It does not generate replies, and there is no AI model or chatbot in the library. It only relays what players type or say to the other players in the same game or lobby group, and reads those messages aloud with the browser's built-in text-to-speech.
-
-GameVoice does **not log, store or share personal information** about users, apart from speech-to-text audio, which some browsers (e.g. Chrome and Edge) send to their vendor's speech service:
-
-- It writes nothing to disk or to a database, and makes no network calls of its own. Chat messages are kept only in server memory (the lobby keeps the last 200), so they are gone when the app restarts.
-- The only thing it saves in the browser is the "talk enabled" setting (`GameVoiceTalkEnabled` in `localStorage`).
-- Debug messages, including transcripts and spoken text, go only to the browser's own developer console.
-
-Speech recognition is done by the browser's Web Speech API, not by GameVoice. Some browsers (for example Chrome and Edge) send the audio to their vendor's online speech service to turn it into text; see your browser's privacy policy. Apps that use GameVoice (such as Draughts and Reversi) have their own accounts and storage, which are covered by those apps, not by this library.
+> GameVoice is **not an AI bot**. It does **not log, store or share personal information** about users. *The speech-to-text audio
+does though send players' speech to the [Microsoft Speech Service (also called Azure AI Speech)](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/overview) for translation into text.*
 
 ## What's in the package
 
@@ -28,7 +21,7 @@ Speech recognition is done by the browser's Web Speech API, not by GameVoice. So
 | `IVoiceCatalog`, `VoiceCatalogEntry`, `VoiceCatalog` | Interface for the admin-allowed voice catalogue (storage stays in the app, e.g. a `UsableMsVoice` table) and token/key helpers. |
 | `IVoicePreferenceStore` | Optional interface for persisting per-user voice preferences. |
 | `wwwroot/gameChat.js` (`window.GameChat`) | Text chat helpers: `scrollToBottom(el)` and `wireEnterToSend(el, dotNetRef, methodName = 'OnChatEnterFromJs')`. |
-| `ChatMessage` | One chat line (time, sender id/name, text, optional lobby group). `VoicePrefix` (`[VOICE] `) marks speech transcripts; `IsVoice` tests for it. |
+| `ChatMessage` | One chat line (time, sender id/name, text, optional lobby group). `VoicePrefix` (`[VOICE]`) marks speech transcripts; `IsVoice` tests for it. |
 | `ChatLog` | Thread-safe in-game chat for one room: `TryAdd` (normalises text), `AddSystem`, `Clear`, indexer/`Count`, and `Format(startIndex, hideVoice)` for a chat textarea. |
 | `LobbyChatService` | Shared lobby chat: group-only messages, admin broadcasts to every group, system messages, per-user delete/clear, last 200 messages, `ChatUpdated` event. Register with `AddGameChat()`. |
 
@@ -91,7 +84,7 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
    _voiceSupported = await JS.InvokeAsync<bool>("GameVoice.isSupported");
    ```
 
-   `TranscriptReceived` gets the trimmed final text; post it to your chat (e.g. with a `[VOICE] ` prefix).
+   `TranscriptReceived` gets the trimmed final text; post it to your chat (e.g. with a `[VOICE]` prefix).
    Use `_voiceControls.Status` for a status line ("Hold to talk", "Sam talking…", "Mic error: …").
    To read messages aloud call `GameVoice.speakAndDescribe(text, voiceKey, language, region)` or
    `GameVoice.speakDefaultAndDescribe(text)` with the sender's `room.GetPreference(senderId)`.
