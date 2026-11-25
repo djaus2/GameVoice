@@ -1,7 +1,7 @@
 # GameVoice
 
-Reusable Blazor Server voice and text chat library (speech recognition, TTS, voice floor, in-game and lobby text chat) for Draughts, Reversi and future games
-such as Chess and WalkieTalkie. It is a Razor class library published as the [`GameVoice`](https://www.nuget.org/packages/GameVoice) package on nuget.org.
+Reusable Blazor Server voice and text chat library (speech recognition, TTS, voice floor, in-game and lobby text chat) for Draughts, Reversi, WalkieTalkie
+and future games such as Chess. It is a Razor class library published as the [`GameVoice`](https://www.nuget.org/packages/GameVoice) package on nuget.org.
 
 ## Disclaimer
 
@@ -14,6 +14,7 @@ such as Chess and WalkieTalkie. It is a Razor class library published as the [`G
 | `wwwroot/gameVoice.js` (`window.GameVoice`) | Browser speech recognition (push-to-talk), TTS unlock, voice enumeration/diagnostics, voice matching and `speak*` helpers. Calls back into .NET via `OnVoiceTranscript`, `OnVoiceError` and `OnVoiceEnded`. |
 | `VoiceRoom` | Game-independent voice state for one room: talk floor (take/renew/release with expiry), room mute (only the muter can unmute) and each user's preferred TTS voice/language/region. Thread-safe. |
 | `VoiceRoomService` | Room-id based operations on `VoiceRoom`s; notifies the app's `IVoiceRoomHost` after each change. |
+| `VoiceRoomSet<TKey>` | Many `VoiceRoom`s keyed by e.g. a group id, with floor and mute spanning several rooms at once: a talker takes the floor in all their rooms or none, mute covers all their rooms (only the muter can unmute), `StateChanged` event. WalkieTalkie uses it with one room per group. |
 | `IVoiceRoomHost` | Implemented by the app (e.g. the game service): finds a room by id and reacts to changes (touch timeouts, raise UI updates, announce voices). |
 | `VoiceControls.razor` | Talk (hold to talk) and Mute/Unmute buttons. Owns the push-to-talk lifecycle: floor acquire/renew every 2 s/release, `GameVoice.start/stop`, transcript and error callbacks. |
 | `VoicePreference` | A user's TTS voice key/language/region, with normalisation. |
@@ -31,7 +32,7 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
 1. Reference the package (from nuget.org, so no extra package source or token is needed):
 
    ```xml
-   <PackageReference Include="GameVoice" Version="1.1.3" />
+   <PackageReference Include="GameVoice" Version="1.2.0" />
    ```
 
 2. Load the scripts before the app's own scripts in `App.razor`:
@@ -96,7 +97,20 @@ Text chat:
 - Enter-to-send: `await JS.InvokeVoidAsync("GameChat.wireEnterToSend", textareaRef, dotNetRef);` calls the
   component's `[JSInvokable] OnChatEnterFromJs()`; `GameChat.scrollToBottom(el)` keeps the latest line visible.
 
-Rooms are not tied to two players: a WalkieTalkie group or a lobby can be a `VoiceRoom` (and a `ChatLog`) too.
+Several rooms at once: when one user talks to several rooms (WalkieTalkie sends voice to all of a user's groups),
+register a `VoiceRoomSet<int>` singleton and pass the user's group ids:
+
+```csharp
+builder.Services.AddSingleton<VoiceRoomSet<int>>();
+
+voice.TryAcquireFloor(userId, userName, myGroupIds);   // all or nothing; renew every 2 s while talking
+voice.ReleaseAllFloors(userId);
+voice.ToggleMute(userId, userName, myGroupIds);        // only the muter can unmute
+var canTalk = !voice.IsFloorHeldByOther(myGroupIds, userId) && !voice.IsMuted(myGroupIds);
+```
+
+Subscribe to `StateChanged` to re-render, and use `voice.IsRoomMuted(groupId)` to skip reading out messages from a
+muted group. `VoiceControls` handles one room, so drive `GameVoice.start/stop` from your own Talk button.
 
 ## Building and releasing
 

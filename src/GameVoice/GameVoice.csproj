@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GameVoice</RootNamespace>
     <PackageId>GameVoice</PackageId>
-    <Version>1.1.3</Version>
+    <Version>1.2.0</Version>
     <Authors>djaus2</Authors>
     <Description>Reusable Blazor Server voice and text chat: push-to-talk speech recognition, text-to-speech playback, voice floor, mute, per-user voice preferences, in-game chat log and lobby chat.</Description>
     <RepositoryUrl>https://github.com/djaus2/GameVoice</RepositoryUrl>
