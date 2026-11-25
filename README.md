@@ -7,7 +7,7 @@ such as Chess and WalkieTalkie. It is a Razor class library published as the [`G
 
 GameVoice is **not an AI bot**. It does not generate replies, and there is no AI model or chatbot in the library. It only relays what players type or say to the other players in the same game or lobby group, and reads those messages aloud with the browser's built-in text-to-speech.
 
-GameVoice does **not log, store or share personal information** about users:
+GameVoice does **not log, store or share personal information** about users, apart from speech-to-text audio, which some browsers (e.g. Chrome and Edge) send to their vendor's speech service:
 
 - It writes nothing to disk or to a database, and makes no network calls of its own. Chat messages are kept only in server memory (the lobby keeps the last 200), so they are gone when the app restarts.
 - The only thing it saves in the browser is the "talk enabled" setting (`GameVoiceTalkEnabled` in `localStorage`).
