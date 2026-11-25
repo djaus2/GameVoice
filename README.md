@@ -5,8 +5,7 @@ such as Chess and WalkieTalkie. It is a Razor class library published as the [`G
 
 ## Disclaimer
 
-> GameVoice is **not an AI bot**. It does **not log, store or share personal information** about users. *The speech-to-text audio
-does though send players' speech to the [Microsoft Speech Service (also called Azure AI Speech)](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/overview) for translation into text.*
+> GameVoice is **not an AI bot**. It does **not log, store or share personal information** about users. *Speech-to-text is done by the browser's built-in speech recognition (the Web Speech API), not by GameVoice. Some browsers send players' speech to an online service to turn it into text: Microsoft Edge uses [Microsoft's speech service (Azure AI Speech)](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/overview) and Google Chrome uses Google's. See your browser's privacy policy.*
 
 ## What's in the package
 
@@ -32,7 +31,7 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
 1. Reference the package (from nuget.org, so no extra package source or token is needed):
 
    ```xml
-   <PackageReference Include="GameVoice" Version="1.1.0" />
+   <PackageReference Include="GameVoice" Version="1.1.3" />
    ```
 
 2. Load the scripts before the app's own scripts in `App.razor`:
