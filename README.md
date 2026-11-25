@@ -3,6 +3,18 @@
 Reusable Blazor Server voice and text chat library (speech recognition, TTS, voice floor, in-game and lobby text chat) for Draughts, Reversi and future games
 such as Chess and WalkieTalkie. It is a Razor class library published as the [`GameVoice`](https://www.nuget.org/packages/GameVoice) package on nuget.org.
 
+## Disclaimer
+
+GameVoice is **not an AI bot**. It does not generate replies, and there is no AI model or chatbot in the library. It only relays what players type or say to the other players in the same game or lobby group, and reads those messages aloud with the browser's built-in text-to-speech.
+
+GameVoice does **not log, store or share personal information** about users:
+
+- It writes nothing to disk or to a database, and makes no network calls of its own. Chat messages are kept only in server memory (the lobby keeps the last 200), so they are gone when the app restarts.
+- The only thing it saves in the browser is the "talk enabled" setting (`GameVoiceTalkEnabled` in `localStorage`).
+- Debug messages, including transcripts and spoken text, go only to the browser's own developer console.
+
+Speech recognition is done by the browser's Web Speech API, not by GameVoice. Some browsers (for example Chrome and Edge) send the audio to their vendor's online speech service to turn it into text; see your browser's privacy policy. Apps that use GameVoice (such as Draughts and Reversi) have their own accounts and storage, which are covered by those apps, not by this library.
+
 ## What's in the package
 
 | Piece | Purpose |
