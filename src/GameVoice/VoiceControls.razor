@@ -53,6 +53,9 @@
 
     [Parameter] public bool TalkEnabled { get; set; }
 
+    /// <summary>Speech recognition language (BCP-47, e.g. "en-AU", "fi-FI"); empty uses "en-AU".</summary>
+    [Parameter] public string? RecognitionLanguage { get; set; }
+
     /// <summary>Who the mute applies to, used in the Mute tooltip.</summary>
     [Parameter] public string MuteAudience { get; set; } = "both players";
 
@@ -174,7 +177,7 @@
         var started = false;
         try
         {
-            started = await JS.InvokeAsync<bool>("GameVoice.start", _dotNetRef);
+            started = await JS.InvokeAsync<bool>("GameVoice.start", _dotNetRef, RecognitionLanguage ?? "");
         }
         catch
         {

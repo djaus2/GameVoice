@@ -32,7 +32,7 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
 1. Reference the package (from nuget.org, so no extra package source or token is needed):
 
    ```xml
-   <PackageReference Include="GameVoice" Version="1.2.0" />
+   <PackageReference Include="GameVoice" Version="1.4.0" />
    ```
 
 2. Load the scripts before the app's own scripts in `App.razor`:
@@ -88,6 +88,11 @@ Game rules, persistence and the chat/lobby page layout stay in each app.
    Use `_voiceControls.Status` for a status line ("Hold to talk", "Sam talking…", "Mic error: …").
    To read messages aloud call `GameVoice.speakAndDescribe(text, voiceKey, language, region)` or
    `GameVoice.speakDefaultAndDescribe(text)` with the sender's `room.GetPreference(senderId)`.
+
+   Speech recognition language: set `RecognitionLanguage="fi-FI"` on `VoiceControls`, or pass it as the second
+   argument when calling `GameVoice.start(dotNetRef, "fi-FI")` yourself. Empty uses `en-AU`. It's a BCP-47 tag
+   for the language being spoken; any accent of that language works, and nothing needs installing because the
+   browser's speech service does the recognition.
 
 Text chat:
 

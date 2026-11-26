@@ -152,9 +152,12 @@ window.GameVoice._scheduleFlush = function () {
   }
 };
 
-window.GameVoice.start = function (dotNetRef) {
+window.GameVoice.defaultRecognitionLanguage = 'en-AU';
+
+// language: BCP-47 recognition language such as 'en-AU' or 'fi-FI'; empty uses defaultRecognitionLanguage.
+window.GameVoice.start = function (dotNetRef, language) {
   try {
-    console.log('[GameVoice.start] called, dotNetRef=', !!dotNetRef);
+    console.log('[GameVoice.start] called, dotNetRef=', !!dotNetRef, 'language=', language);
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       console.log('[GameVoice.start] SpeechRecognition not supported');
@@ -179,12 +182,20 @@ window.GameVoice.start = function (dotNetRef) {
 
     window.GameVoice._dotNetRef = dotNetRef;
     window.GameVoice._shouldListen = true;
+    var recLang = ((language || '') + '').trim() || window.GameVoice.defaultRecognitionLanguage || 'en-AU';
+    window.GameVoice.recognitionLanguage = recLang;
     var rec = window.GameVoice._rec;
+    if (rec) {
+      try {
+        rec.lang = recLang;
+      } catch (eLang) {
+      }
+    }
     if (!rec) {
       rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
-      rec.lang = 'en-AU';
+      rec.lang = recLang;
 
       rec.onresult = function (ev) {
         try {
